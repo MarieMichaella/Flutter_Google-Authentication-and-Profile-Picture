@@ -28,6 +28,12 @@ class _ContactListState extends State<ContactList> {
         appBar: AppBar(
           centerTitle: true,
           title: const Text("Contact List"),
+                      leading: IconButton(
+              icon: Icon(Icons.arrow_back),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
         ),
         body: Container(
           height: double.infinity,
