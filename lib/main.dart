@@ -24,6 +24,7 @@ class MyApp extends StatelessWidget {
       builder: (context, themeProvider, child) {
         return MaterialApp(
           title: 'Navigator',
+          debugShowCheckedModeBanner: false,
           theme: themeProvider.themeData,
           darkTheme: ThemeData.dark(),
           themeMode: themeProvider.themeMode,

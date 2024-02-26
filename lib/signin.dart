@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'api/google_signin_api.dart';
 import 'homescreen.dart';
 
 class SignInScreen extends StatelessWidget {
@@ -10,10 +12,10 @@ class SignInScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => HomeScreen()),
-              );
+              // Navigator.pushReplacement(
+              //   context,
+              //   MaterialPageRoute(builder: (context) => HomeScreen()),
+              // );
             },
             child: Text('Home'),
             style: TextButton.styleFrom(
@@ -61,6 +63,7 @@ class SignInScreen extends StatelessWidget {
             SizedBox(height: 20.0),
             ElevatedButton.icon(
               onPressed: () {
+                signIn(context); // Call the signin function directly
               },
               icon: Icon(Icons.account_circle),
               label: Text('Sign In with Google'),
@@ -76,11 +79,11 @@ class SignInScreen extends StatelessWidget {
                 Text("Don't have an account?"),
                 TextButton(
                   onPressed: () {
-                    // Navigate to sign-up screen
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => SignUpScreen()),
-                    );
+                    // // Navigate to sign-up screen
+                    // Navigator.push(
+                    //   context,
+                    //   MaterialPageRoute(builder: (context) => SignUpScreen()),
+                    // );
                   },
                   child: Text('Sign up'),
                 ),
@@ -90,6 +93,25 @@ class SignInScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future signIn(BuildContext context) async {
+    final user = await GoogleSignInApi.login();
+
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Sign in failed')),
+      );
+    } else {
+Navigator.of(context).pushReplacement(
+  MaterialPageRoute(
+    builder: (context) => HomeScreen(user: user),
+  ),
+);
+
+
+
+    }
   }
 }
 
@@ -102,10 +124,10 @@ class SignUpScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => HomeScreen()),
-              );
+              // Navigator.pushReplacement(
+              //   context,
+              //   MaterialPageRoute(builder: (context) => HomeScreen()),
+              // );
             },
             child: Text('Home'),
             style: TextButton.styleFrom(
@@ -175,6 +197,7 @@ class SignUpScreen extends StatelessWidget {
             SizedBox(height: 20.0),
             ElevatedButton.icon(
               onPressed: () {
+                signIn(context); // Pass the current context to signIn function
               },
               icon: Icon(Icons.account_circle),
               label: Text('Sign In with Google'),
@@ -187,5 +210,21 @@ class SignUpScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future signIn(BuildContext context) async {
+    final user = await GoogleSignInApi.login();
+
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Sign in failed')),
+      );
+    } else {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => HomeScreen(user: user),
+        ),
+      );
+    }
   }
 }

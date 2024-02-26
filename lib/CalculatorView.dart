@@ -3,10 +3,17 @@ import 'package:navigations/buttons.dart';
 import 'package:provider/provider.dart'; // Import the Provider package
 import 'homescreen.dart';
 import 'Aboutscreen.dart';
-import 'themeprovider.dart'; // Import the ThemeProvider class
+import 'themeprovider.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'api/google_signin_api.dart';
+import 'NewScreen.dart';
 
 class CalculatorScreen extends StatefulWidget {
-  const CalculatorScreen({Key? key}) : super(key: key);
+      final GoogleSignInAccount user;
+  CalculatorScreen({
+    Key? key,
+    required this.user,
+  }):super(key: key);
 
   @override
   State<CalculatorScreen> createState() => _CalculatorScreenState();
@@ -136,13 +143,17 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                 if (index == 0) {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => HomeScreen()),
+                    MaterialPageRoute(builder: (context) => HomeScreen(user :widget.user)),
                   );
                 } else if (index == 2) {
-                  Navigator.push(
+                                    Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => AboutScreen()),
+                    MaterialPageRoute(builder: (context) => AboutUs(user :widget.user)),
                   );
+              // Navigator.push(
+              //   context,
+              //   MaterialPageRoute(builder: (context) => AboutScreen(user : widget.user)),
+              // );
                 }
               },
             ),
@@ -168,7 +179,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                 fontWeight: FontWeight.bold,
                 fontSize: 30,
                 color: (isNumber(value) || [Btn.calculate].contains(value))
-                    ? isDarkTheme ? Colors.white : Colors.black // Adjust text color based on theme
+                    ? isDarkTheme ? Colors.white : Colors.black 
                     : Colors.green,
               ),
             ),
@@ -185,7 +196,6 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   }
 
   bool isNumber(String value) {
-    // Check if the value is a number (0-9 or dot)
     return RegExp(r'^[0-9.]+$').hasMatch(value);
   }
 

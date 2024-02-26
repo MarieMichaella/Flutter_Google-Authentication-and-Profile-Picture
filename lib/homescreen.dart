@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'CalculatorView.dart';
 import 'Aboutscreen.dart';
@@ -5,43 +7,29 @@ import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:provider/provider.dart';
 import 'themeprovider.dart';
 import 'signin.dart';
-
-void main() {
-  runApp(
-    ChangeNotifierProvider(
-      create: (_) => ThemeProvider(),
-      builder: (context, _) => const MyApp(),
-    ),
-  );
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        return MaterialApp(
-          title: 'Navigator',
-          theme: themeProvider.themeData,
-          darkTheme: ThemeData.dark(),
-          themeMode: themeProvider.themeMode,
-          home: const HomeScreen(),
-        );
-      },
-    );
-  }
-}
+import 'package:google_sign_in/google_sign_in.dart';
+import 'api/google_signin_api.dart';
+import 'NewScreen.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'contactlist.dart';
+import 'Gallery.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:path_provider/path_provider.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
-
+  final GoogleSignInAccount user;
+  HomeScreen({
+    Key? key,
+    required this.user,
+  }) :super(key: key);
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  Uint8List? _selectedImageBytes;
+  File ? _selectedImage;
   int _selectedIndex = 0;
   String _connectionStatus = 'Unknown';
   int _currentIndex = 0;
@@ -51,7 +39,87 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _initConnectivity();
     _listenForConnectivityChanges();
+    _listenForConnectivityChanges();
+    _loadImage();
   }
+
+  void _removeImage() {
+  setState(() {
+    _selectedImage = null;
+    _selectedImageBytes = null;
+  });
+}
+
+  void _loadImage() async {
+  String? imagePath = await _getImagePath();
+  if (imagePath != null) {
+    setState(() {
+      _selectedImage = File(imagePath);
+    });
+  }
+}
+
+  Future<void> _saveImagePath(String imagePath) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.setString('imagePath', imagePath);
+}
+
+Future<String?> _getImagePath() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  return prefs.getString('imagePath');
+}
+
+Future<void> _pickImageFromGallery() async {
+  final picker = ImagePicker();
+  final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+  if (pickedFile != null) {
+    final bytes = await pickedFile.readAsBytes();
+    final compressedBytes = await FlutterImageCompress.compressWithList(
+      bytes,
+      minHeight: 100,
+      minWidth: 100,
+      quality: 40,
+    );
+
+    // Save the new image path
+    final Directory appDir = await getApplicationDocumentsDirectory();
+    final String imagePath = '${appDir.path}/gallery_image.jpg';
+    await File(imagePath).writeAsBytes(compressedBytes);
+    await _saveImagePath(imagePath);
+
+    setState(() {
+      _selectedImage = File(pickedFile.path);
+      _selectedImageBytes = compressedBytes;
+    });
+  }
+}
+
+Future<void> _pickImageFromCamera() async {
+  final picker = ImagePicker();
+  final pickedFile = await picker.pickImage(source: ImageSource.camera);
+
+  if (pickedFile != null) {
+    final bytes = await pickedFile.readAsBytes();
+    final compressedBytes = await FlutterImageCompress.compressWithList(
+      bytes,
+      minHeight: 100,
+      minWidth: 100,
+      quality: 40,
+    );
+
+    // Save the new image path
+    final Directory appDir = await getApplicationDocumentsDirectory();
+    final String imagePath = '${appDir.path}/camera_image.jpg';
+    await File(imagePath).writeAsBytes(compressedBytes);
+    await _saveImagePath(imagePath);
+
+    setState(() {
+      _selectedImage = File(pickedFile.path);
+      _selectedImageBytes = compressedBytes;
+    });
+  }
+}
 
   Future<void> _initConnectivity() async {
     bool isConnected = await InternetConnectionChecker().hasConnection;
@@ -121,6 +189,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Home'),
@@ -147,22 +216,33 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
           ),
-          PopupMenuButton(
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                child: ListTile(
-                  leading: Icon(Icons.person),
-                  title: Text('Sign In'),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => SignInScreen()),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
+PopupMenuButton(
+  itemBuilder: (context) => [
+    PopupMenuItem(
+      child: ListTile(
+        leading: Icon(Icons.person),
+        title: Text('Sign In'),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => SignInScreen()),
+          );
+        },
+      ),
+    ),
+    PopupMenuItem(
+      child: ListTile(
+        leading: Icon(Icons.logout),
+        title: Text('Logout'),
+        onTap: () async{
+          await GoogleSignInApi.logout();
+          Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => SignInScreen()));
+        },
+      ),
+    ),
+  ],
+),
+
         ],
       ),
       drawer: Drawer(
@@ -171,80 +251,130 @@ class _HomeScreenState extends State<HomeScreen> {
             borderRadius: BorderRadius.circular(70),
           ),
           child: Column(
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: Color(0xFF5271FF),
+children: [
+  Container(
+    decoration: BoxDecoration(
+      color: Color(0xFF5271FF),
+    ),
+    height: 100,
+    child: Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.only(left: 16.0),
+        child: Text(
+          'Menu',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+          ),
+        ),
+      ),
+    ),
+  ),
+  SizedBox(height: 20),
+  Container(
+    width: 70, // Adjust the size as needed
+    height: 70, // Adjust the size as needed
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      border: Border.all(color: Colors.black, width: 2),
+    ),
+    child: _selectedImage != null
+        ? ClipRRect(
+            borderRadius: BorderRadius.circular(100), // Half of the width or height for a circle
+            child: Image.file(_selectedImage!, fit: BoxFit.cover),
+          )
+        : const Icon(Icons.image, size: 100), // Placeholder icon if no image is selected
+  ),
+  ListTile(
+    leading: Icon(Icons.home),
+    title: Text('Home'),
+    onTap: () {
+      Navigator.pop(context);
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => HomeScreen(user: widget.user)),
+      );
+    },
+  ),
+  ListTile(
+    leading: Icon(Icons.calculate),
+    title: Text('Calculator'),
+    onTap: () {
+      Navigator.pop(context);
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => CalculatorScreen(user: widget.user)),
+      );
+    },
+  ),
+  ListTile(
+    leading: Icon(Icons.info),
+    title: Text('About'),
+    onTap: () {
+      Navigator.pop(context);
+    },
+  ),
+  ListTile(
+    leading: Icon(Icons.info),
+    title: Text('Change Profile Picture'),
+    onTap: () {
+      Navigator.pop(context);
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => GalleryScreen(user: widget.user)),
+      );
+    },
+  ),
+  ListTile(
+    leading: Icon(Icons.settings),
+    title: Text('Settings'),
+  ),
+  ListTile(
+    leading: Icon(Icons.help),
+    title: Text('Help'),
+  ),
+  ListTile(
+    leading: Icon(Icons.account_circle),
+    title: Text('Sign In'),
+    onTap: () {
+      Navigator.pop(context);
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => SignInScreen()),
+      );
+    },
+  ),
 
-                ),
-                height: 100,
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 16.0),
-                    child: Text(
-                      'Menu',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              ListTile(
-                leading: Icon(Icons.home),
-                title: Text('Home'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => HomeScreen()),
-                  );
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.calculate),
-                title: Text('Calculator'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => CalculatorScreen()),
-                  );
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.info),
-                title: Text('About'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => AboutScreen()),
-                  );
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.settings),
-                title: Text('Settings'),
-              ),
-              ListTile(
-                leading: Icon(Icons.help),
-                title: Text('Help'),
-              ),
-              ListTile(
-                leading: Icon(Icons.account_circle),
-                title: Text('Sign In'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => SignInScreen()),
-                  );
-                },
-              ),
-            ],
+ElevatedButton(
+  onPressed: () {
+    _pickImageFromGallery();
+  },
+  child: ListTile(
+    title: Text('Add Image From Gallery'),
+  ),
+),
+
+ElevatedButton(
+  onPressed: () {
+    _pickImageFromCamera();
+  },
+  child: ListTile(
+    title: Text('Add Image From Camera'),
+  ),
+),
+
+ElevatedButton(
+  onPressed: () {
+    _removeImage();
+  },
+  child: ListTile(
+    title: Text('Remove Image'),
+  ),
+),
+
+],
+
           ),
         ),
       ),
@@ -429,6 +559,19 @@ _connectionStatus == 'Connected'
               ),
               label: 'About',
             ),
+            BottomNavigationBarItem(
+              icon: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                ),
+                child: CircleAvatar(
+                  child: Icon(Icons.contacts),
+                  backgroundColor: Color(0xFF5271FF),
+
+                ),
+              ),
+              label: 'Contact',
+            ),
           ],
           selectedItemColor: Color(0xFF5271FF),
           currentIndex: _selectedIndex,
@@ -436,22 +579,45 @@ _connectionStatus == 'Connected'
             if (index == 0) {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => HomeScreen()),
+                MaterialPageRoute(builder: (context) => HomeScreen(user: widget.user)),
               );
             } else if (index == 1) {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => CalculatorScreen()),
+                MaterialPageRoute(builder: (context) => CalculatorScreen(user: widget.user)),
               );
             } else if (index == 2) {
               Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => AboutScreen()),
-              );
+                    context,
+                    MaterialPageRoute(builder: (context) => AboutUs(user :widget.user)),
+                  );
+
+            }
+            else if (index == 3) {
+              Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => ContactList(user :widget.user)),
+                  );
+
             }
           },
         ),
       ),
     );
   }
+  // Future _pickImageFromGallery() async {
+  //   final returnedImage = await ImagePicker().pickImage(source: ImageSource.gallery);
+  //   if(returnedImage == null) return;
+  //   setState(() {
+  //     _selectedImage = File(returnedImage.path);
+  //   });
+  // }
+
+  //   Future _pickImageFromCamera() async {
+  //   final returnedImage = await ImagePicker().pickImage(source: ImageSource.camera);
+  //   if(returnedImage == null) return;
+  //   setState(() {
+  //     _selectedImage = File(returnedImage.path);
+  //   });
+  // }
 }

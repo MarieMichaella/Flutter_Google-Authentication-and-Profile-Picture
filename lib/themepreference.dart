@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'homescreen.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'api/google_signin_api.dart';
 
 class ThemePreference {
   static const String _themeKey = 'theme';
@@ -39,26 +41,26 @@ final ThemeData darkTheme = ThemeData(
   // Define your dark theme data here
 );
 
-void main() {
-  runApp(
-    ChangeNotifierProvider<ThemeProvider>(
-      create: (_) => ThemeProvider(false),
-      child: MyApp(),
-    ),
-  );
-}
+// void main() {
+//   runApp(
+//     ChangeNotifierProvider<ThemeProvider>(
+//       create: (_) => ThemeProvider(false),
+//       child: MyApp(),
+//     ),
+//   );
+// }
 
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        return MaterialApp(
-          title: 'Navigator',
-          theme: themeProvider.getTheme(),
-          home: const HomeScreen(),
-        );
-      },
-    );
-  }
-}
+// class MyApp extends StatelessWidget {
+//   @override
+//   Widget build(BuildContext context) {
+//     return Consumer<ThemeProvider>(
+//       builder: (context, themeProvider, child) {
+//         return MaterialApp(
+//           title: 'Navigator',
+//           theme: themeProvider.getTheme(),
+//           home: const HomeScreen(user: widget.user),
+//         );
+//       },
+//     );
+//   }
+// }

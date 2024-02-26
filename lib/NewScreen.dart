@@ -6,19 +6,19 @@ import 'themeprovider.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'api/google_signin_api.dart';
 
-class AboutScreen extends StatefulWidget {
+class AboutUs extends StatefulWidget {
   final GoogleSignInAccount user; 
-  AboutScreen({
+  AboutUs({
     Key? key,
     required this.user, 
   }):super(key: key);
 
   @override
-  _AboutScreenState createState() => _AboutScreenState();
+  _AboutUsState createState() => _AboutUsState();
 }
 
 
-class _AboutScreenState extends State<AboutScreen> {
+class _AboutUsState extends State<AboutUs> {
   int _selectedIndex = 2;
 
   @override
@@ -187,20 +187,20 @@ class _AboutScreenState extends State<AboutScreen> {
               _selectedIndex = index;
             });
             if (index == 0) {
-              // Navigator.push(
-              //   context,
-              //   MaterialPageRoute(builder: (context) => HomeScreen(user : widget.user)),
-              // );
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => HomeScreen(user : widget.user)),
+              );
             } else if (index == 1) {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => CalculatorScreen(user : widget.user)),
               );
             } else if (index == 2) {
-              // Navigator.push(
-              //   context,
-              //   MaterialPageRoute(builder: (context) => AboutScreen(user : widget.user)),
-              // );
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => AboutUs(user : widget.user)),
+              );
             }
           },
         ),

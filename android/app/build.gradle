@@ -51,6 +51,15 @@ android {
         versionName flutterVersionName
     }
 
+    signingConfigs {
+        debug {
+            keyAlias 'upload'
+            keyPassword 'carmella'
+            storeFile file ('upload-keystore.jks')
+            storePassword 'carmella'
+        }
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.
@@ -58,6 +67,7 @@ android {
             signingConfig signingConfigs.debug
         }
     }
+
 }
 
 flutter {
